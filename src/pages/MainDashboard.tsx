@@ -16,7 +16,6 @@ import {
   Legend, ResponsiveContainer, ComposedChart, FunnelChart, Funnel, RadialBarChart, RadialBar
 } from 'recharts';
 
-// Типы графиков
 const CHART_TYPES = [
   { value: 'line', label: 'Линейный', icon: LineChartIcon },
   { value: 'bar', label: 'Столбчатый', icon: BarChart3 },
@@ -84,7 +83,7 @@ export default function MainDashboard() {
     toast.success('Отчёт скачан');
   }, [filteredData, activeFileName]);
 
-  const getChart = (config: any, idx: number) => {
+  const getChart = (config: any) => {
     const chartType = selectedChartTypes[config.id] || config.type || 'line';
     const data = filteredData;
 
@@ -152,15 +151,6 @@ export default function MainDashboard() {
             </Funnel>
             <RechartsTooltip />
           </FunnelChart>
-        </ResponsiveContainer>
-      );
-    }
-
-    if (chartType === 'treemap') {
-      const treeData = filteredData.slice(0, 20).map((d, i) => ({ name: String(d[config.x] || i), size: Number(d[config.y]) || 1 }));
-      return (
-        <ResponsiveContainer width="100%" height="100%">
-          <Treemap data={treeData} dataKey="size" ratio={4 / 3} stroke="#fff" fill="#8884d8" />
         </ResponsiveContainer>
       );
     }
@@ -335,7 +325,7 @@ export default function MainDashboard() {
                 </div>
               </CardHeader>
               <CardContent className="h-[280px] sm:h-[340px] lg:h-[400px] p-3 sm:p-4 lg:p-8">
-                {getChart(config, idx)}
+                {getChart(config)}
               </CardContent>
             </Card>
           );
