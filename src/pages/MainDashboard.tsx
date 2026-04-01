@@ -10,14 +10,34 @@ import { Badge } from '@/components/ui/badge';
 import { Footer } from '@/components/Footer';
 import { toast } from 'sonner';
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  ResponsiveContainer
+  LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
+  Legend, ResponsiveContainer, ComposedChart, FunnelChart, Funnel, RadialBarChart, RadialBar,
+  Treemap
 } from 'recharts';
+
+// Типы графиков
+const CHART_TYPES = [
+  { value: 'line', label: 'Линейный' },
+  { value: 'bar', label: 'Столбчатый' },
+  { value: 'area', label: 'Область' },
+  { value: 'pie', label: 'Круговая' },
+  { value: 'radar', label: 'Радар' },
+  { value: 'scatter', label: 'Точечная' },
+  { value: 'composed', label: 'Комбинированный' },
+  { value: 'funnel', label: 'Воронка' },
+  { value: 'radial', label: 'Радиальная' },
+  { value: 'treemap', label: 'Дерево' }
+];
+
+const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
 
 export default function MainDashboard() {
   const { filteredData } = useFilters();
   const { analysisMetadata, activeFileName } = useUserData();
   const [showAllStats, setShowAllStats] = useState(false);
+  const [selectedChartTypes, setSelectedChartTypes] = useState<Record<string, string>>({});
 
   const fmtNum = (v: number) => {
     if (typeof v !== 'number' || isNaN(v)) return '0';
@@ -26,14 +46,7 @@ export default function MainDashboard() {
     if (Math.abs(v) % 1 !== 0) return v.toFixed(2);
     return String(v);
   };
-<Button 
-  variant="outline" 
-  size="sm" 
-  onClick={() => console.log('analysisMetadata:', analysisMetadata)}
-  className="text-xs"
->
-  🔍 Проверить данные
-</Button>
+
   const columnStats = useMemo(() => {
     if (!filteredData.length || !analysisMetadata) return [];
     const numericCols = Object.entries(analysisMetadata.columns_info)
@@ -72,6 +85,152 @@ export default function MainDashboard() {
     doc.save('report.pdf');
     toast.success('Отчёт скачан');
   }, [filteredData, activeFileName]);
+
+  const getChart = (config: any, idx: number) => {
+    const chartType = selectedChartTypes[config.id] || config.type || 'line';
+    const data = filteredData;
+
+    // Круговая диаграмма (агрегированные данные)
+    if (chartType === 'pie') {
+      const aggregated = new Map<string, number>();
+      filteredData.forEach(row => {
+        const key = String(row[config.x]);
+        const value = Number(row[config.y]) || 0;
+        aggregated.set(key, (aggregated.get(key) || 0) + value);
+      });
+      const pieData = Array.from(aggregated.entries()).map(([name, value]) => ({ name, value })).slice(0, 8);
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie data={pieData} cx="50%" cy="50%" labelLine={false} label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`} outerRadius={80} dataKey="value">
+              {pieData.map((_, i) => <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />)}
+            </Pie>
+            <RechartsTooltip />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    // Радиальная диаграмма
+    if (chartType === 'radial') {
+      const values = filteredData.map(d => Number(d[config.y])).filter(v => !isNaN(v));
+      const avg = values.reduce((a, b) => a + b, 0) / values.length;
+      const radialData = [{ name: config.y, value: avg, fill: '#8884d8' }];
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="80%" barSize={20} data={radialData} startAngle={180} endAngle={0}>
+            <RadialBar minAngle={15} background clockWise dataKey="value" fill="#8884d8" label={{ position: 'insideStart', fill: '#fff' }} />
+            <RechartsTooltip />
+          </RadialBarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    // Радар
+    if (chartType === 'radar') {
+      const radarData = [{
+        subject: config.y,
+        value: filteredData.reduce((sum, d) => sum + (Number(d[config.y]) || 0), 0) / filteredData.length,
+        fullMark: Math.max(...filteredData.map(d => Number(d[config.y]) || 0))
+      }];
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+            <PolarGrid />
+            <PolarAngleAxis dataKey="subject" />
+            <PolarRadiusAxis angle={30} domain={[0, 'auto']} />
+            <Radar name={config.y} dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+            <RechartsTooltip />
+          </RadarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    // Воронка
+    if (chartType === 'funnel') {
+      const funnelData = filteredData.slice(0, 8).map((d, i) => ({ name: String(d[config.x] || i + 1), value: Number(d[config.y]) || 0 }));
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <FunnelChart>
+            <Funnel dataKey="value" data={funnelData} isAnimationActive labelLine label={({ name, value }) => `${name}: ${value}`}>
+              {funnelData.map((_, i) => <Cell key={`cell-${i}`} fill={COLORS[i % COLORS.length]} />)}
+            </Funnel>
+            <RechartsTooltip />
+          </FunnelChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    // Дерево (Treemap)
+    if (chartType === 'treemap') {
+      const treeData = filteredData.slice(0, 20).map((d, i) => ({ name: String(d[config.x] || i), size: Number(d[config.y]) || 1 }));
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <Treemap data={treeData} dataKey="size" ratio={4 / 3} stroke="#fff" fill="#8884d8" />
+        </ResponsiveContainer>
+      );
+    }
+
+    // Комбинированный
+    if (chartType === 'composed') {
+      return (
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={config.x} />
+            <YAxis />
+            <RechartsTooltip />
+            <Legend />
+            <Bar dataKey={config.y} barSize={20} fill="#8884d8" />
+            <Line type="monotone" dataKey={config.y} stroke="#ff7300" strokeWidth={2} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    // Стандартные графики (line, bar, area, scatter)
+    return (
+      <ResponsiveContainer width="100%" height="100%">
+        {chartType === 'line' && (
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted)/0.2)" />
+            <XAxis dataKey={config.x} fontSize={10} axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+            <YAxis fontSize={10} axisLine={false} tickLine={false} tickFormatter={fmtNum} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+            <RechartsTooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)', backgroundColor: 'hsl(var(--card))' }} />
+            <Line type="monotone" dataKey={config.y} stroke="hsl(var(--primary))" strokeWidth={5} dot={{ r: 4, fill: 'hsl(var(--primary))', strokeWidth: 0 }} activeDot={{ r: 8, stroke: 'white', strokeWidth: 4 }} />
+          </LineChart>
+        )}
+        {chartType === 'bar' && (
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted)/0.2)" />
+            <XAxis dataKey={config.x} fontSize={10} axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+            <YAxis fontSize={10} axisLine={false} tickLine={false} tickFormatter={fmtNum} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+            <RechartsTooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)', backgroundColor: 'hsl(var(--card))' }} />
+            <Bar dataKey={config.y} fill="hsl(var(--primary))" radius={[12, 12, 0, 0]} />
+          </BarChart>
+        )}
+        {chartType === 'area' && (
+          <AreaChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted)/0.2)" />
+            <XAxis dataKey={config.x} fontSize={10} axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+            <YAxis fontSize={10} axisLine={false} tickLine={false} tickFormatter={fmtNum} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+            <RechartsTooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)', backgroundColor: 'hsl(var(--card))' }} />
+            <Area type="monotone" dataKey={config.y} stroke="hsl(var(--primary))" fill="hsl(var(--primary)/0.3)" strokeWidth={3} />
+          </AreaChart>
+        )}
+        {chartType === 'scatter' && (
+          <ScatterChart>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey={config.x} name={config.x} />
+            <YAxis dataKey={config.y} name={config.y} />
+            <RechartsTooltip cursor={{ strokeDasharray: '3 3' }} />
+            <Scatter name="Корреляция" data={data} fill="hsl(var(--primary))" />
+          </ScatterChart>
+        )}
+      </ResponsiveContainer>
+    );
+  };
 
   if (!activeFileName) {
     return (
@@ -158,44 +317,41 @@ export default function MainDashboard() {
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
-        {analysisMetadata?.chart_configs.slice(0, 4).map((config, idx) => (
-          <Card key={idx} className="border-none shadow-2xl bg-card/40 backdrop-blur-xl rounded-[24px] sm:rounded-[32px] overflow-hidden">
-            <CardHeader className="pb-0 pt-4 px-4 sm:pt-8 sm:px-8">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />
-                <CardDescription className="text-[10px] font-bold uppercase tracking-widest">Анализ: {config.type === 'line' ? 'Линейный' : 'Столбчатый'}</CardDescription>
-              </div>
-              <CardTitle className="text-lg sm:text-2xl font-black tracking-tighter break-words">
-                {config.title || `Зависимость ${config.y} от ${config.x}`}
-              </CardTitle>
-              <div className="flex gap-2 mt-1">
-                <Badge variant="outline" className="text-[9px]">X: {config.x}</Badge>
-                <Badge variant="outline" className="text-[9px]">Y: {config.y}</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="h-[280px] sm:h-[340px] lg:h-[400px] p-3 sm:p-4 lg:p-8">
-              <ResponsiveContainer width="100%" height="100%">
-                {config.type === 'line' ? (
-                  <LineChart data={filteredData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted)/0.2)" />
-                    <XAxis dataKey={config.x} fontSize={10} axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <YAxis fontSize={10} axisLine={false} tickLine={false} tickFormatter={fmtNum} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <RechartsTooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)', backgroundColor: 'hsl(var(--card))' }} />
-                    <Line type="monotone" dataKey={config.y} stroke="hsl(var(--primary))" strokeWidth={5} dot={{ r: 4, fill: 'hsl(var(--primary))', strokeWidth: 0 }} activeDot={{ r: 8, stroke: 'white', strokeWidth: 4 }} />
-                  </LineChart>
-                ) : (
-                  <BarChart data={filteredData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--muted)/0.2)" />
-                    <XAxis dataKey={config.x} fontSize={10} axisLine={false} tickLine={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <YAxis fontSize={10} axisLine={false} tickLine={false} tickFormatter={fmtNum} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <RechartsTooltip contentStyle={{ borderRadius: '24px', border: 'none', boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)', backgroundColor: 'hsl(var(--card))' }} />
-                    <Bar dataKey={config.y} fill="hsl(var(--primary))" radius={[12, 12, 0, 0]} />
-                  </BarChart>
-                )}
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        ))}
+        {analysisMetadata?.chart_configs.slice(0, 6).map((config, idx) => {
+          const currentType = selectedChartTypes[config.id] || config.type || 'line';
+          const chartTypeInfo = CHART_TYPES.find(t => t.value === currentType) || CHART_TYPES[0];
+          return (
+            <Card key={idx} className="border-none shadow-2xl bg-card/40 backdrop-blur-xl rounded-[24px] sm:rounded-[32px] overflow-hidden">
+              <CardHeader className="pb-0 pt-4 px-4 sm:pt-8 sm:px-8">
+                <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />
+                    <CardDescription className="text-[10px] font-bold uppercase tracking-widest">
+                      {chartTypeInfo.label}
+                    </CardDescription>
+                  </div>
+                  <select
+                    value={currentType}
+                    onChange={(e) => setSelectedChartTypes({ ...selectedChartTypes, [config.id]: e.target.value })}
+                    className="text-xs bg-background border border-border rounded-lg px-2 py-1"
+                  >
+                    {CHART_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <CardTitle className="text-lg sm:text-2xl font-black tracking-tighter break-words">
+                  {config.title || `Зависимость ${config.y} от ${config.x}`}
+                </CardTitle>
+                <div className="flex gap-2 mt-1">
+                  <Badge variant="outline" className="text-[9px]">X: {config.x}</Badge>
+                  <Badge variant="outline" className="text-[9px]">Y: {config.y}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="h-[280px] sm:h-[340px] lg:h-[400px] p-3 sm:p-4 lg:p-8">
+                {getChart(config, idx)}
+              </CardContent>
+            </Card>
+          );
+        })}
       </section>
 
       <section className="pt-6 sm:pt-10 border-t border-border/40">
