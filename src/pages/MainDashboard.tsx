@@ -26,7 +26,14 @@ export default function MainDashboard() {
     if (Math.abs(v) % 1 !== 0) return v.toFixed(2);
     return String(v);
   };
-
+<Button 
+  variant="outline" 
+  size="sm" 
+  onClick={() => console.log('analysisMetadata:', analysisMetadata)}
+  className="text-xs"
+>
+  🔍 Проверить данные
+</Button>
   const columnStats = useMemo(() => {
     if (!filteredData.length || !analysisMetadata) return [];
     const numericCols = Object.entries(analysisMetadata.columns_info)
