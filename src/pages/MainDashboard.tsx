@@ -13,8 +13,7 @@ import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
-  Legend, ResponsiveContainer, ComposedChart, FunnelChart, Funnel, RadialBarChart, RadialBar,
-  Treemap
+  Legend, ResponsiveContainer, ComposedChart, FunnelChart, Funnel, RadialBarChart, RadialBar
 } from 'recharts';
 
 // Типы графиков
@@ -27,8 +26,7 @@ const CHART_TYPES = [
   { value: 'scatter', label: 'Точечная', icon: ScatterChartIcon },
   { value: 'composed', label: 'Комбинированный', icon: BarChart3 },
   { value: 'funnel', label: 'Воронка', icon: Funnel },
-  { value: 'radial', label: 'Радиальная', icon: Gauge },
-  { value: 'treemap', label: 'Дерево', icon: Database }
+  { value: 'radial', label: 'Радиальная', icon: Gauge }
 ];
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82CA9D', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
