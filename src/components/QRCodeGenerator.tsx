@@ -3,7 +3,7 @@ import { QRCodeSVG } from 'qrcode.react'
 
 const QRCodeGenerator: React.FC = () => {
   const [showQR, setShowQR] = useState(false)
-  const currentUrl = 'https://data-canal-jfb0filbf-drariana2025-labs-projects.vercel.app/'
+  const currentUrl = 'https://data-canal-iz.vercel.app/'
 
   const downloadQR = () => {
     const canvas = document.getElementById('qr-code-canvas')
