@@ -103,11 +103,17 @@ export default function AuthPage() {
               <form onSubmit={handleSignIn} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      type="email" 
+                      placeholder="Email" 
+                      value={email} 
+                      onChange={e => setEmail(e.target.value)} 
+                      className="pl-10" 
+                    />
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Пароль"
@@ -120,7 +126,7 @@ export default function AuthPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowPassword(v => !v)}
-                      className="absolute right-1 top-1/2 -translate-y-1"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
                       aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -148,11 +154,17 @@ export default function AuthPage() {
               <form onSubmit={handleSignUp} className="space-y-4 mt-4">
                 <div className="space-y-2">
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} className="pl-10" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                      type="email" 
+                      placeholder="Email" 
+                      value={email} 
+                      onChange={e => setEmail(e.target.value)} 
+                      className="pl-10" 
+                    />
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Пароль (мин. 6 символов)"
@@ -165,7 +177,7 @@ export default function AuthPage() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setShowPassword(v => !v)}
-                      className="absolute right-1 top-1/2 -translate-y-1"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
                       aria-label={showPassword ? 'Скрыть пароль' : 'Показать пароль'}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
